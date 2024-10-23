@@ -363,7 +363,6 @@ class JsonEditorWidget extends BaseWidget
             if ($this->model->hasErrors()) {
                 $widgetJs .= "
                 setTimeout(() => {
-                    console.log('hey')
                     window.{$widgetRefName}.validate(true)
                 });";
             }
