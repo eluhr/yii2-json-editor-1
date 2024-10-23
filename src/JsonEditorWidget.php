@@ -302,71 +302,70 @@ class JsonEditorWidget extends BaseWidget
             $csrfToken = Yii::$app->request->getCsrfToken();
             $schema = json_encode($this->schema);
 
-            $widgetJs .= "window.{$widgetRefName}.validate = (forceDirty = false) => {
-              const json = window.{$widgetRefName}.editor.getValue()
-              const jsonSchema = JSON.parse('{$schema}')
-              
-              fetch('{$this->validationAction}', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRF-Token': '{$csrfToken}'
-                },
-                body: JSON.stringify({
-                    json: json,
-                    jsonSchema: jsonSchema
-                })
-              })
-              .then(response => response.json())
-              .then(data => {
-                if (data.status === 'error') {
-                  const root = window.{$widgetRefName}.editor.root.formname
-        
-                  const mappedErrors = data.errors.map((error) => {
-                    error.path = error.path.replace(/^\//, root + '.').replace(/\//g, '.');
-        
-                    if (error.path === root + '.') {
-                      error.path = root
-                    }
-        
-                    return error
-                  });
+            $widgetJs .= <<<JS
+                window.{$widgetRefName}.validate = (forceDirty = false) => {
+                  const json = window.{$widgetRefName}.editor.getValue();
+                  const jsonSchema = JSON.parse('{$schema}');
                   
-                  for (let key in window.{$widgetRefName}.editor.editors) {
-                    const childEditor = window.{$widgetRefName}.editor.editors[key]
-                    
-                    if (childEditor) {
-                      if (forceDirty) {
-                        childEditor.is_dirty = true
-                      }
+                  fetch('{$this->validationAction}', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRF-Token': '{$csrfToken}'
+                    },
+                    body: JSON.stringify({
+                        json: json,
+                        jsonSchema: jsonSchema
+                    })
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                    if (data.status === 'error') {
+                      const root = window.{$widgetRefName}.editor.root.formname;
+                
+                      const mappedErrors = data.errors.map((error) => {
+                        error.path = error.path.replace(/^\//, root + '.').replace(/\//g, '.');
+                
+                        if (error.path === root + '.') {
+                          error.path = root;
+                        }
+                
+                        return error;
+                      });
                       
-                      if (childEditor.is_dirty) {
-                        childEditor.showValidationErrors(mappedErrors)
-                        childEditor.is_dirty = false
+                      for (let key in window.{$widgetRefName}.editor.editors) {
+                        const childEditor = window.{$widgetRefName}.editor.editors[key];
+                        
+                        if (childEditor) {
+                          if (forceDirty) {
+                            childEditor.is_dirty = true;
+                          }
+                          
+                          if (childEditor.is_dirty) {
+                            childEditor.showValidationErrors(mappedErrors);
+                            childEditor.is_dirty = false;
+                          }
+                        }
                       }
                     }
-                  }
-                }
-              })
-              .catch((error) => {
-                console.error('Error:', error);
-              });
-            };
-
-            setTimeout(() => {
-                window.{$widgetRefName}.editor.on('change', function () {
-                    window.{$widgetRefName}.validate();
-                })
-            });
-            ";
+                  })
+                  .catch((error) => {
+                    console.error('Error:', error);
+                  });
+                };
+                
+                setTimeout(() => {
+                    window.{$widgetRefName}.editor.on('change', function () {
+                        window.{$widgetRefName}.validate();
+                    });
+                });
+            JS;
 
             if ($this->model->hasErrors()) {
-                $widgetJs .= "
-                setTimeout(() => {
-                    window.{$widgetRefName}.validate(true)
-                });";
+                $widgetJs .= "setTimeout(() => { window.{$widgetRefName}.validate(true); });";
             }
         }
+
 
         $readyFunction = '';
         $readyFunction .= "{$widgetId}.on('change', function() { document.getElementById('{$inputId}').value = JSON.stringify({$widgetId}.getValue()); });\n";
