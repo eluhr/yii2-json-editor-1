@@ -8,7 +8,7 @@ use dmstr\jsoneditor\helpers\JsonEditorValidatorHelper;
 
 class JsonEditorValidationAction extends Action
 {
-    public static function getFilters()
+    protected function getFilters()
     {
         return [];
     }
@@ -29,8 +29,8 @@ class JsonEditorValidationAction extends Action
     {
         $rawBody = Yii::$app->request->getRawBody();
         $postData = json_decode($rawBody, true);
-        $json = isset($postData['json']) ? $postData['json'] : null;
-        $jsonSchema = isset($postData['jsonSchema']) ? $postData['jsonSchema'] : null;
+        $json = $postData['json'] ?? null;
+        $jsonSchema = $postData['jsonSchema'] ?? null;
 
         if (!$json || !$jsonSchema) {
             return $this->controller->asJson([
@@ -40,8 +40,7 @@ class JsonEditorValidationAction extends Action
         }
 
         $jsonValidatorHelper = new JsonEditorValidatorHelper();
-        $filters = static::getFilters();
-        $validationErrors = $jsonValidatorHelper->validateJson($json, $jsonSchema, $filters);
+        $validationErrors = $jsonValidatorHelper->validateJson($json, $jsonSchema, $this->getFilters());
 
         if (!empty($validationErrors)) {
             return $this->controller->asJson([
